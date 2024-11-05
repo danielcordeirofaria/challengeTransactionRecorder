@@ -1,9 +1,10 @@
 package com.challenge.TransactionRecorder.controller;
 
 import com.challenge.TransactionRecorder.model.Transaction;
-import com.challenge.TransactionRecorder.service.ITransactionService;
 import com.challenge.TransactionRecorder.service.TransactionServiceImpl;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
@@ -19,22 +20,33 @@ public class TransactionController {
     @Autowired
     private TransactionServiceImpl transactionService;
 
+    private Logger logger;
+
     @PostMapping
     public ResponseEntity<?> addTransaction(@RequestBody Transaction transaction) {
         try {
-            ResponseEntity<?> response = transactionService.saveTransaction(transaction);
-            return response;
+            ResponseEntity<String> savedTransaction = transactionService.saveTransaction(transaction);
+            return ResponseEntity.ok(savedTransaction);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An error occurred while registering the new transaction."));
+            logger.error("Error saving transaction", e);
+            return ResponseEntity.internalServerError().body("An error occurred while registering the new transaction.");
         }
     }
 
     @GetMapping
-    public ResponseEntity<ArrayList<Transaction>> getAllTransactions() {
-        ArrayList<Transaction> transactions = transactionService.getAllTransactions();
-        return ResponseEntity.ok(transactions);
+    public ResponseEntity<?> getAllTransactions() {
+        try {
+            ArrayList<Transaction> transactions = transactionService.getAllTransactions();
+            return ResponseEntity.ok(transactions);
+        } catch (DataAccessException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while retrieving transactions from the database.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred.");
+        }
     }
 
     @GetMapping("/{idTransaction}/{country}/{currency}")

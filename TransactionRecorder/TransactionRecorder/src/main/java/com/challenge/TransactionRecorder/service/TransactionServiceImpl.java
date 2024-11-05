@@ -62,7 +62,7 @@ public class TransactionServiceImpl implements ITransactionService{
                         Calendar calendar = Calendar.getInstance();
                         calendar.add(Calendar.MONTH, -6);
                         Date sixMonthsAgo = calendar.getTime();
-                        System.out.println(exchangeRateData.getString("record_date"));
+//                        System.out.println(exchangeRateData.getString("record_date"));
 
                         if (date.after(sixMonthsAgo)) {
                             double purchaseAmount = transactionDAO.getByIdTransaction(idTransaction).getPuchaseAmount();
@@ -77,7 +77,7 @@ public class TransactionServiceImpl implements ITransactionService{
                 }
 
                 logger.error("No valid exchange rate found for " + country + " and " + currency);
-                return "No valid exchange rate found for " + country + " and " + currency; // Mensagem mais informativa
+                return "No valid exchange rate found for " + country + " and " + currency;
             }
 
         } catch (Exception e) {
@@ -88,28 +88,37 @@ public class TransactionServiceImpl implements ITransactionService{
         return null;
     }
 
+    public void validateTransaction(Transaction transaction) {
+        if (transaction.getDescription().length() > 50) {
+            throw new IllegalArgumentException("Description is too long. Please, decrease the description.");
+        }
+        if(transactionDAO.existsById(transaction.getIdTransaction())){
+            throw new IllegalArgumentException("Existent Id.");
+        }
+
+        if (transaction.getPuchaseAmount()<=0){
+            throw new IllegalArgumentException("The amount can not be smaller or equal than zero.");
+        }
+
+    }
+
     @Override
-    public ResponseEntity<?> saveTransaction(Transaction transaction) {
+    public ResponseEntity<String> saveTransaction(Transaction transaction) {
         try{
+            logger.info("Saving transaction: {}", transaction);
             transaction.setDate(new Date());
 
-            if(transactionDAO.existsById(transaction.getIdTransaction())){
-                return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Existent Id."));
-            }
-            if(transaction.getDescription().length()>50){
-                return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Description is too long. Please, decrease the description."));
-            }
-            if (transaction.getPuchaseAmount()<=0){
-                return ResponseEntity.badRequest().body(Collections.singletonMap("message", "The amount can not be smaller or equal than zero."));
-            }
             double formattedAmount = Math.round(transaction.getPuchaseAmount() * 100.0) / 100.0;
             transaction.setPuchaseAmount(formattedAmount);
-
+            validateTransaction(transaction);
             transactionDAO.save(transaction);
-            return ResponseEntity.status(HttpStatus.CREATED).body(Collections.singletonMap("message", "Transaction registered successfully"));
+            return ResponseEntity.ok().body("Transaction registered successfully");
 
-        }catch (Exception e){
-            logger.error(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.error("Error saving transaction: Description too long", e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error saving transaction", e);
             return ResponseEntity.internalServerError().body("An error occurred while registering the new transaction.");
         }
     }

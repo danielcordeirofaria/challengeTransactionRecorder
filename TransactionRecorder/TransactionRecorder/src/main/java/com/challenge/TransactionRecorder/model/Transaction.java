@@ -24,11 +24,28 @@ public class Transaction {
     private double puchaseAmount;
 
     public Transaction(int idTransaction, String description, Date date, double puchaseAmount) {
+        if (idTransaction <= 0) {
+            throw new IllegalArgumentException("IdTransaction must be greater than zero.");
+        }
         this.idTransaction = idTransaction;
+
+        if (description == null || description.isEmpty()) {
+            throw new IllegalArgumentException("Description cannot be null or empty.");
+        }
+        if (description.length() > 50) {
+            throw new IllegalArgumentException("Description cannot exceed 50 characters.");
+        }
         this.description = description;
+        if (date == null) {
+            throw new IllegalArgumentException("Date cannot be null.");
+        }
         this.date = date;
+        if (puchaseAmount <= 0) {
+            throw new IllegalArgumentException("Purchase amount must be greater than zero.");
+        }
         this.puchaseAmount = puchaseAmount;
     }
+
 
     public Transaction() {}
 
