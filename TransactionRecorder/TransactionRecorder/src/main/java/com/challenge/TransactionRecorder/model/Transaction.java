@@ -5,7 +5,6 @@ import lombok.Data;
 import jakarta.persistence.*;
 import java.util.Date;
 
-@Data
 @Entity
 public class Transaction {
 

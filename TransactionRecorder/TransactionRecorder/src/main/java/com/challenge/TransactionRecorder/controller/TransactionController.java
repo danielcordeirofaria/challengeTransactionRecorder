@@ -25,8 +25,9 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<?> addTransaction(@RequestBody Transaction transaction) {
         try {
-            ResponseEntity<String> savedTransaction = transactionService.saveTransaction(transaction);
-            return ResponseEntity.ok(savedTransaction);
+
+            return transactionService.saveTransaction(transaction);
+
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
